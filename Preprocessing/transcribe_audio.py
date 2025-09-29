@@ -14,7 +14,7 @@ OUTPUT_FOLDER = "../Transcriptions"
 LANGUAGE = "de"
 MODEL_SIZE = "medium"
 DIARIZE = True
-REDO = True
+REDO = False
 
 def normalize_audio(input_path, output_path):
     # Analyze loudness
@@ -56,10 +56,6 @@ def normalize_audio(input_path, output_path):
         "-ar", "16000", "-ac", "1",
         output_path
     ]
-    #normalize_cmd = [
-    #    "ffmpeg", "-i", input_for_normalization,
-    #    "-filter:a", "loudnorm", output_path
-    #]
     subprocess.run(normalize_cmd)
 
     # Delete temp file
@@ -114,22 +110,23 @@ if __name__ == "__main__":
         ptp_path = Path(*file_path.parent.parts[1:])
 
         (Path(OUTPUT_FOLDER) / ptp_path).mkdir(parents=True, exist_ok=True)
-        (Path(NORMALIZED_AUDIO) / ptp_path).mkdir(parents=True, exist_ok=True)
+        #(Path(NORMALIZED_AUDIO) / ptp_path).mkdir(parents=True, exist_ok=True)
 
         base_name = file_path.stem
-        normalized_path = Path(NORMALIZED_AUDIO) / ptp_path / f"{base_name}.wav"
+        #normalized_path = Path(NORMALIZED_AUDIO) / ptp_path / f"{base_name}.wav"
         transcript_path = Path(OUTPUT_FOLDER) / ptp_path / f"{base_name}.json"
 
         # Skip if already transcribed
-        if os.path.exists(transcript_path) and os.path.exists(normalized_path) and not REDO:
-            continue
+        #if os.path.exists(normalized_path) and not REDO:
+        #    continue
 
         # Normalize volume and transcribe
         try:
-            print("\nNormalizing volume ...")
-            normalize_audio(file_path, normalized_path)
+            #print("\nNormalizing volume ...")
+            #normalize_audio(file_path, normalized_path)
             print(f"\nTranscribing: {base_name}")
             transcribe_audio(model, file_path, transcript_path, batch_size, device, diarize_model)
 
         except Exception as e:
             print(f"Error processing {base_name}: {e}")
+

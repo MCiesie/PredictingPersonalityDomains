@@ -5,6 +5,7 @@ from pathlib import Path
 import torch
 from prepare_data import extract_pid, extract_session
 
+
 AUDIO_FEATURES_FOLDER = "./audio_features_new"
 DUPLICATES = "./combined_audios.txt"
 OUTPUT_FILE = "./all_audio_data.pt"
@@ -12,7 +13,7 @@ OUTPUT_FILE = "./all_audio_data.pt"
 
 if __name__ == "__main__":
     with open(DUPLICATES, "r") as f:
-        duplicates = f.read()
+        duplicates = set(line.strip() for line in f)
 
     features_files = glob.glob(os.path.join(AUDIO_FEATURES_FOLDER, "**", "*.csv"), recursive=True)
 
@@ -37,3 +38,4 @@ if __name__ == "__main__":
 
     # Save to file
     torch.save(all_data, OUTPUT_FILE)
+

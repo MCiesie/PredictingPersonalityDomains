@@ -6,6 +6,7 @@ def pad_dataset(data_dict, pad_value=0.0):
     text_feats = [torch.as_tensor(txt, dtype=torch.float32) for txt in data_dict["text"]]
     audio_feats = [torch.as_tensor(aud, dtype=torch.float32) for aud in data_dict["audio"]]
     labels = [torch.as_tensor(lab, dtype=torch.float32) for lab in data_dict["labels"]]
+    metadata = data_dict["metadata"]
 
     max_turns_text = max(txt.shape[0] for txt in text_feats)
     max_turns_audio = max(aud.shape[0] for aud in audio_feats)
@@ -18,7 +19,8 @@ def pad_dataset(data_dict, pad_value=0.0):
     padded_labels = []
     masks = []
 
-    for txt, aud, lab in zip(text_feats, audio_feats, labels):
+
+    for txt, aud, lab, meta in zip(text_feats, audio_feats, labels, metadata):
         num_turns_txt = txt.shape[0]
         num_turns_aud = aud.shape[0]
 
@@ -26,7 +28,7 @@ def pad_dataset(data_dict, pad_value=0.0):
         padded_text.append(torch.nn.functional.pad(txt, (0, 0, 0, max_turns - num_turns_txt), value=pad_value))
         padded_audio.append(torch.nn.functional.pad(aud, (0, 0, 0, max_turns - num_turns_aud), value=pad_value))
 
-        # pad labels
+        # pad labels (with -1)
         padded_labels.append(torch.nn.functional.pad(lab, (0, max_turns - lab.shape[0]), value=-1))
 
         # mask: 1 for real turns, 0 for padded
@@ -49,3 +51,4 @@ if __name__ == "__main__":
 
     padded_data = pad_dataset(all_data)
     torch.save(padded_data, "./training_dataset.pt")
+

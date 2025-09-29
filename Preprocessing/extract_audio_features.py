@@ -5,6 +5,7 @@ import opensmile
 
 from prepare_data import extract_session
 
+
 AUDIO_FOLDER = "./normalized_audio"
 FEATURES_FOLDER = "./audio_features_new"
 REDO = False
@@ -24,8 +25,8 @@ for file_path in audio_files:
     base_name = file_path.stem
 
     session = extract_session(base_name)
-    if 1 not in session and 8 not in session:
-        continue
+    #if 1 not in session and 8 not in session:
+    #    continue
 
     ptp_path = Path(*file_path.parent.parts[1:])
 
@@ -38,3 +39,4 @@ for file_path in audio_files:
 
     feat_df = smile.process_file(file_path)
     feat_df.to_csv(features_path)
+

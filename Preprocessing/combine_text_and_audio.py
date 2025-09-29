@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -102,6 +103,9 @@ def prepare_dataset(
         all_labels.append(labels)
         all_metadata.append({"PID": pid, "session": session_num, "speaker": session_data["speaker"]})
 
+        if np.isnan(labels).any():
+            print(f"NaN labels for {pid}")
+
     return {
         "text": all_text_features,
         "audio": all_audio_features,
@@ -112,13 +116,14 @@ def prepare_dataset(
 
 if __name__ == "__main__":
     dataset = prepare_dataset(
-        transcript_data="./all_data.json",
+        transcript_data="./all_data_patient.json", # NEW
         opensmile_data="./audio_features_new",
-        embedding_dir="./text_embeddings"
+        embedding_dir="./text_embeddings_patient" # NEW
     )
 
     print(len(dataset["text"]))
     print(dataset["text"][0].shape, dataset["audio"][0].shape)
     torch.save(dataset, "processed_dataset.pt")
     print("Dataset saved successfully")
+
 

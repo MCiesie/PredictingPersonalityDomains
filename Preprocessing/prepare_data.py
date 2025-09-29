@@ -9,13 +9,12 @@ from collections import defaultdict
 from pathlib import Path
 
 # File locations
-TRANSCRIPT_FOLDER = "../Transcriptions"
+TRANSCRIPT_FOLDER = "./Transcriptions"
 DUPLICATES = "./combined_audios.txt"
-#AUDIO_FEATURES_FOLDER = "./audio_features"
-LABELS_DATA = "../share_Mateusz/dat_TUD.csv"
-PT_TO_PTP_MAPPING = "../MPI_Psychiatrie/codebooks/PT to PTP.xlsx"
+LABELS_DATA = "./share_Mateusz/dat_TUD.csv"
+PT_TO_PTP_MAPPING = "../codebooks/PT to PTP.xlsx"
 SPEAKER_MAP = "./speaker_map.json"
-OUTPUT_FILE = "./all_data.json"
+OUTPUT_FILE = "./all_data_patient.json"
 
 
 def detect_encoding(labels_path):
@@ -62,14 +61,18 @@ def load_speaker_map():
         return json.load(f)
 
 
-def process_transcript(transcript_path, speaker_map, all_labels, mapping):
+def process_transcript(transcript_path, speaker_map, all_labels, mapping, nan_pids):
     with open(transcript_path, "r") as f:
         transcript = json.load(f)
 
     base_name = Path(file_path).stem
     trans_dict = defaultdict(list)
 
-    pid = extract_pid(file_path)
+    try:
+        pid = extract_pid(file_path)
+    except ValueError as e:
+        print(e)
+        return None
 
     trans_dict["PID"] = pid
     trans_dict["session"] = extract_session(base_name)
@@ -81,14 +84,15 @@ def process_transcript(transcript_path, speaker_map, all_labels, mapping):
 
     for seg in transcript["segments"]:
         text = seg.get("text")
-        if text in last_texts[-2:]:  # Check for last two repeats
+        if text in last_texts[-2:]:  # Check if turns are repeating
             continue
-        trans_dict["turns"].append(text)
         speaker_id = seg.get("speaker")
         speaker_name = speaker_map.get(base_name).get(speaker_id, "Unknown")
-        trans_dict["speaker"].append(speaker_name)
-        trans_dict["time"].append((seg.get("start"), seg.get("end")))
-        last_texts.append(text)
+        if speaker_name == "Patient":
+            trans_dict["turns"].append(text)
+            trans_dict["speaker"].append(speaker_name)
+            trans_dict["time"].append((seg.get("start"), seg.get("end")))
+            last_texts.append(text)
 
     curr_row = all_labels[all_labels["ID"] == pid]
     if curr_row.empty:
@@ -103,8 +107,12 @@ def process_transcript(transcript_path, speaker_map, all_labels, mapping):
     trans_dict["labels_pre"] = [float(x.iloc[0]) for x in facets[0] + facets[2]]
     trans_dict["labels_post"] = [float(x.iloc[0]) for x in facets[1] + facets[3]]
 
-    return trans_dict
+    if np.all(np.isnan(trans_dict["labels_pre"])):
+        nan_pids.add(trans_dict["PID"])
+    if np.all(np.isnan(trans_dict["labels_post"])):
+        nan_pids.add(trans_dict["PID"])
 
+    return trans_dict, nan_pids
 
 def get_facets(patient):
     pid5_domains = [
@@ -153,14 +161,16 @@ if __name__ == "__main__":
 
     all_data = []
 
+    nan_pids = set()
     for file_path in transcript_files:
         if Path(file_path).stem in duplicates:
-            continue
-
-        processed = process_transcript(file_path, speaker_map, all_labels, mapping)
+            continue 
+        
+        processed, nan_pids = process_transcript(file_path, speaker_map, all_labels, mapping, nan_pids)
         if processed:
-            if 1 in processed["session"] or 8 in processed["session"]:
-                all_data.append(processed)
+            all_data.append(processed)
 
+    print(f"{len(nan_pids)} files have no labels")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(all_data, f, ensure_ascii=False, indent=2)
+

@@ -25,7 +25,7 @@ def compute_text_embeddings(
     for session_data in all_text_data:
         if 1 not in session_data["session"] and 8 not in session_data["session"]:
             continue
-
+        
         pid = session_data["PID"]
         session_num = 1 if 1 in session_data["session"] else 8
         turns = session_data["turns"]
@@ -60,10 +60,10 @@ def compute_text_embeddings(
 
     print("All embeddings computed and saved")
 
+
 if __name__ == "__main__":
     compute_text_embeddings(
-        text_data="./all_data.json",
-        embedding_dir="./text_embeddings",
+        text_data="./all_data_patient.json",
+        embedding_dir="./text_embeddings_patient",
         model_name="sentence-transformers/all-distilroberta-v1"
     )
-
